@@ -41,7 +41,7 @@ metadata/IDs/URL buttons, not private content/media bytes. Albums copy per item;
 edits are not synchronized and cross-chat reply IDs aren't reused.
 
 Release publication triggers a short GitHub Actions run; prereleases are skipped.
-There is no scheduled/manual workflow trigger. Forks need their own release event
+Release checks have no scheduled/manual trigger. Forks need their own release event
 or a local CLI check; upstream release events do not propagate to forks.
 The repository secret TGCLOUD_TOKEN authorizes the CLI run API. check-updates.mjs
 reads the actual deployed lib/version source before invoking SDK-only updates.js.
@@ -49,5 +49,18 @@ GitHub's stable releases/latest is compared numerically; no releases/current ver
 produce no topic or notice. The existing support_config table stores a five-minute
 check lease, dedicated topic/group and last successfully announced version. It
 deduplicates ordinary/concurrent runs and recovers a missing/closed updates topic.
-Notification is not deployment. As with support copies, an ambiguous crash after
+Owner-only update callbacks edit a release notice into phone/CLI instructions.
+The shared Gramless Updates app uses device flow (public client ID, no app key or
+client secret). Private device state/check intervals and short-lived user tokens
+live in support_config, bound to owner/repository; no refresh token is retained.
+The device token request includes repository_id. /updates selects a public workflow
+repository and clears prior authorization when changed. install dispatches
+update-bot.yml; repository writers can also dispatch manually with a blank request ID.
+The TGCloud token stays in Actions secrets. SDK fetch cannot reach management
+(verified live), so self-deploy must run through Actions. update_request persists
+queued/running/done/failed state; ambiguous dispatches stay queued for manual review.
+Actions resolve a published upstream tag to a commit, validate sources/version,
+refuse pending schema changes/module removals, then revision-check deployment.
+setup:updates off removes authorization; reset unlocks only after operator review.
+As with support copies, an ambiguous crash after
 Telegram accepted a notice but before the DB acknowledgement may duplicate it.

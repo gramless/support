@@ -21,6 +21,7 @@
     "test": "node --test tests/support.test.mjs",
     "configure": "node scripts/configure.mjs",
     "setup:commands": "node scripts/setup-commands.mjs",
+    "setup:updates": "node scripts/setup-updates.mjs",
     "check:updates": "node scripts/check-updates.mjs",
     "verify:cloud": "node scripts/verify-cloud.mjs"
   },

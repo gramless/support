@@ -4,6 +4,7 @@ import { telegramId, threadId, topicTitle, topicIntroduction, contactInfo, comma
 import { locale, t } from './i18n.js';
 import { languageFor, welcome, languageMenu, screen, receipt, pinIfAllowed } from './interface.js';
 import { newsletterMenu, captureNewsletter, cancelDraft } from './newsletter.js';
+import { updatesCommand } from './updater.js';
 
 function apiError(error, code, pattern) {
   return error instanceof BotApiError && error.code === code && pattern.test(error.description || '');
@@ -231,13 +232,14 @@ export async function handleMessage(message) {
   if (privateChat) {
     await store.rememberUser(message.from.id);
     await store.savePreference(message.from.id, 'bot_status', 'member');
-    if (parsed && ['start', 'language', 'source', 'newsletter', 'cancel'].includes(parsed.name)) {
+    if (parsed && ['start', 'language', 'source', 'newsletter', 'cancel', 'updates'].includes(parsed.name)) {
       if (!await ownCommand(parsed)) return;
       if (parsed.name === 'start') { await cancelDraft(message.from); return welcome(message.from); }
       if (parsed.name === 'language') return languageMenu(message.from);
       if (parsed.name === 'source') return screen(message.from, t(await languageFor(message.from), 'source'));
       if (parsed.name === 'newsletter') return newsletterMenu(message.from);
       if (parsed.name === 'cancel') return cancelDraft(message.from);
+      if (parsed.name === 'updates') return updatesCommand(message);
     }
     if (await captureNewsletter(message)) return;
   } else if (parsed?.name === 'id' && await ownCommand(parsed) && await authorized(message)) {

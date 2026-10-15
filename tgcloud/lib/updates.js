@@ -60,18 +60,24 @@ export async function checkReleases(installedVersion) {
     const params = { chat_id: group, text: t(language, 'updateAvailable', {
       version: release.tag_name, installed: installedVersion,
     }), reply_markup: { inline_keyboard: [[{ text: t(language, 'viewRelease'), url }]] } };
+    if (await store.setting('owner_id')) {
+      params.reply_markup.inline_keyboard.push([{ text: t(language, 'updateBot'),
+        callback_data: 'update:' + release.tag_name }]);
+    }
+    let message;
     try {
-      await api.sendMessage({ ...params, message_thread_id: thread });
+      message = await api.sendMessage({ ...params, message_thread_id: thread });
     } catch (error) {
       if (topicFailure(error, /message thread not found|forum topic not found|topic_deleted|topic_id_invalid|message_thread_invalid/i)) {
         thread = await createTopic(group, language);
       } else if (topicFailure(error, /topic_closed|topic is closed/i)) {
         await api.reopenForumTopic({ chat_id: group, message_thread_id: thread });
       } else throw error;
-      await api.sendMessage({ ...params, message_thread_id: thread });
+      message = await api.sendMessage({ ...params, message_thread_id: thread });
     }
     // Record only an acknowledged send; permission/HTTP failures never mark a release sent.
-    await save('release_notified', JSON.stringify({ group, version: release.tag_name }));
+    await save('release_notified', JSON.stringify({ group, version: release.tag_name,
+      installed: installedVersion, message: message.message_id }));
     return { checked: true, notified: true, version: release.tag_name, installedVersion };
   } finally {
     await db.run("UPDATE support_config SET value = '', updated_at = unixepoch() WHERE key = 'release_check_lock' AND value = :token", { ':token': token });

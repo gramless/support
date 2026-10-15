@@ -21,5 +21,13 @@ credential-free CI. Fresh-clone checks do not depend on cached TGCloud capabilit
 Release notification logic is deployed. The GitHub Action runs only on release
 publication, skips prereleases, compares the actual deployed version, and posts
 newer stable versions into a separate persistent updates topic when TGCLOUD_TOKEN
-is configured. Source version is 1.0.0; the linked deployment remains 0.1.0 until
-explicitly upgraded. There is no scheduled or manual workflow trigger.
+is configured. Source and linked deployment version are 1.0.0; updater additions
+are newer than the published v1.0.0 tag. Release checks have no scheduled or manual
+workflow trigger; deployments use a separate explicit dispatch workflow.
+
+Gramless Updates is registered under gramless with Actions write/Metadata read.
+It is shared across projects; Support is the first adapter. Phone/CLI screens,
+private device authorization and migration-free revision-checked update tooling
+are implemented. Device flow was initially disabled in the app registration;
+owner must enable it. No live authorization/deployment through this app has been
+verified. Do not claim other projects are already integrated.

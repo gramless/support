@@ -14,6 +14,9 @@ const { default: membership } = await import('../tgcloud/handlers/my_chat_member
 const { messages } = await import('../tgcloud/lib/i18n.js');
 const { parseButtons } = await import('../tgcloud/lib/newsletter.js');
 const { checkReleases } = await import('../tgcloud/lib/updates.js');
+const { updateCallback } = await import('../tgcloud/lib/updater.js');
+const { connectGithub, githubToken } = await import('../tgcloud/lib/github-auth.js');
+const { installRelease } = await import('../scripts/update-deployment.mjs');
 const { newerRelease } = await import('../tgcloud/lib/version.js');
 const { byUser } = await import('../tgcloud/lib/store.js');
 const { topicTitle, topicIntroduction, telegramId } = await import('../tgcloud/lib/format.js');
@@ -28,6 +31,152 @@ const calls = method => state.calls.filter(call => call.method === method);
 const copies = () => calls('copyMessage');
 const fail = (method, code, description, when) => state.failures.push({ method, error: new BotApiError(code, description, method), when });
 beforeEach(() => { reset(); messageId = 0; });
+
+async function updateNotice() {
+  for (const [key, value] of [['owner_id', '2001'], ['update_repository', 'gramless/support'],
+    ['update_auth', JSON.stringify({owner:2001,repository:'gramless/support',token:'test-token',expires:Math.floor(Date.now()/1000)+3600})]]) {
+    await db.run('INSERT INTO support_config (key,value) VALUES (:key,:value)', { ':key': key, ':value': value });
+  }
+  await checkReleases('0.1.0');
+  const notice = calls('sendMessage').at(-1);
+  const saved = JSON.parse((await db.get("SELECT value FROM support_config WHERE key='release_notified'")).value);
+  return { id: 'update-call', from: { id: 2001, is_bot: false, language_code: 'en' },
+    data: 'up:install:v0.2.0', message: { chat: { id: GROUP, type: 'supergroup' },
+      message_id: saved.message, message_thread_id: notice.params.message_thread_id } };
+}
+
+test('update button dispatches the exact release once for its owner and mapped notification', async () => {
+  const call = await updateNotice();
+  assert.equal(calls('sendMessage').at(-1).params.reply_markup.inline_keyboard[1][0].callback_data, 'update:v0.2.0');
+  await callback(call);
+  assert.equal(state.dispatches.length, 1);
+  assert.equal(state.dispatches[0].ref, 'main');
+  assert.equal(state.dispatches[0].inputs.release_tag, 'v0.2.0');
+  const request = JSON.parse((await db.get("SELECT value FROM support_config WHERE key='update_request'")).value);
+  assert.equal(request.id, state.dispatches[0].inputs.request_id);
+  assert.equal(request.state, 'queued');
+  await callback(call);
+  assert.equal(state.dispatches.length, 1);
+});
+
+test('update authorization rejects other users, groups, topics, forged messages and versions', async () => {
+  const call = await updateNotice();
+  for (const forged of [
+    { ...call, from: { ...call.from, id: 1001 } },
+    { ...call, from: { ...call.from, is_bot: true } },
+    { ...call, message: { ...call.message, chat: { id: -100999 } } },
+    { ...call, message: { ...call.message, message_thread_id: 999 } },
+    { ...call, message: { ...call.message, message_id: 999 } },
+    { ...call, data: 'update:v0.3.0' },
+    { ...call, data: 'update:../../main' },
+  ]) await callback(forged);
+  assert.equal(state.dispatches.length, 0);
+});
+
+test('dispatch HTTP failures allow retry, while ambiguous failures remain queued', async () => {
+  const call = await updateNotice();
+  state.dispatchStatus = 403;
+  await updateCallback(call);
+  assert.equal(JSON.parse((await db.get("SELECT value FROM support_config WHERE key='update_request'")).value).state, 'failed');
+  state.dispatchError = true;
+  await updateCallback(call);
+  assert.equal(state.dispatches.length, 2);
+  assert.equal(JSON.parse((await db.get("SELECT value FROM support_config WHERE key='update_request'")).value).state, 'queued');
+  await callback(call);
+  assert.equal(state.dispatches.length, 2);
+});
+
+test('release deployment checks revision and schema before deploying and never applies migrations', async () => {
+  const sources = { schema: 'schema', 'lib/version': "export const VERSION = '1.1.0';",
+    'handlers/message': 'handler', 'handlers/callback_query': 'callback' };
+  const remote = { revision: 12, canonical_modules: { ...sources, 'lib/version': "export const VERSION = '1.0.0';" } };
+  const deployments = [];
+  let changes = [{ type: 'add_column' }];
+  const transport = {
+    async getFiles() { return remote; },
+    async applyMigration(token, options) { assert.deepEqual(options, { schema: 'schema', dry_run: true }); return { db_changes: changes }; },
+    async batchDeploy(token, payload) { deployments.push(payload); },
+    async syncWebhook() {},
+  };
+  await assert.rejects(installRelease(sources, 'v1.1.0', 'token', transport), /migration required/);
+  assert.equal(deployments.length, 0);
+  changes = [];
+  await installRelease(sources, 'v1.1.0', 'token', transport);
+  assert.equal(deployments[0].expected_revision, 12);
+  assert.deepEqual(deployments[0].changed_sources, sources);
+  remote.canonical_modules['lib/custom'] = 'custom';
+  await assert.rejects(installRelease(sources, 'v1.1.0', 'token', transport), /modules would be removed/);
+  delete remote.canonical_modules['lib/custom'];
+  await assert.rejects(installRelease(sources, 'v1.0.0', 'token', transport), /mismatched/);
+  transport.batchDeploy = async () => { throw new Error('Revision conflict'); };
+  await assert.rejects(installRelease(sources, 'v1.1.0', 'token', transport), /Revision conflict/);
+  transport.batchDeploy = async () => { remote.canonical_modules = sources; throw new Error('Response lost'); };
+  await installRelease(sources, 'v1.1.0', 'token', transport);
+  await assert.rejects(installRelease(sources, 'v1.1.0', 'token', transport), /not newer/);
+});
+
+test('release button edits one message into phone/CLI screens with back navigation and no deployment', async () => {
+  const call = await updateNotice();
+  await callback({ ...call, data: 'update:v0.2.0' });
+  const help = calls('editMessageText').at(-1).params;
+  assert.equal(help.message_id, call.message.message_id);
+  assert.deepEqual(help.reply_markup.inline_keyboard.slice(0, 2).map(row => row[0].text), ['Without a PC', 'CLI commands']);
+  await callback({ ...call, data: 'up:phone:v0.2.0' });
+  const phone = calls('editMessageText').at(-1).params;
+  assert.ok(phone.text.includes('/updates owner/repository'));
+  assert.ok(phone.reply_markup.inline_keyboard.some(row => row[0].url === 'https://github.com/apps/gramless-updates/installations/new'));
+  await callback({ ...call, data: 'up:cli:v0.2.0' });
+  assert.ok(calls('editMessageText').at(-1).params.text.includes('git switch --detach v0.2.0'));
+  await callback({ ...call, data: 'up:home:v0.2.0' });
+  assert.ok(calls('editMessageText').at(-1).params.text.includes('Update available'));
+  assert.equal(state.dispatches.length, 0);
+  assert.equal(copies().length, 0);
+});
+
+test('GitHub device authorization persists private ownership, throttles checks and scopes token to one repository', async () => {
+  await updateNotice();
+  assert.equal(await connectGithub(2001, 'en'), 'githubCheckPrivate');
+  const saved = () => db.get("SELECT value FROM support_config WHERE key='update_device'");
+  const device = JSON.parse((await saved()).value);
+  const authCall = { id: 'auth-call', data: 'upauth:' + device.id,
+    from: { id: 2001, is_bot: false }, message: { chat: { id: 2001, type: 'private' }, message_id: device.message } };
+  await callback(authCall);
+  assert.equal(state.oauthCalls.length, 0);
+  await db.run("UPDATE support_config SET value=json_set(value,'$.next',0) WHERE key='update_device'");
+  await callback({ ...authCall, from: { id: 1001, is_bot: false } });
+  assert.equal(state.oauthCalls.length, 0);
+  await callback(authCall);
+  assert.equal(state.oauthCalls.length, 1);
+  assert.equal(state.oauthCalls[0].repository_id, 42);
+  state.oauthReply = { access_token: 'device-token', expires_in: 28800 };
+  await db.run("UPDATE support_config SET value=json_set(value,'$.next',0) WHERE key='update_device'");
+  await callback(authCall);
+  assert.equal(await githubToken(2001, 'gramless/support'), 'device-token');
+  assert.equal(await githubToken(2001, 'gramless/other'), null);
+  assert.equal(await githubToken(1001, 'gramless/support'), null);
+  assert.equal(await saved(), null);
+  await handle({ ...user(2001), text: '/updates gramless/other' });
+  assert.equal(await githubToken(2001, 'gramless/support'), null);
+  assert.equal(copies().length, 0);
+});
+
+test('device flow handles slow_down and expiration without workers or retaining refresh tokens', async () => {
+  await updateNotice();
+  await connectGithub(2001, 'ru');
+  const row = await db.get("SELECT value FROM support_config WHERE key='update_device'");
+  const device = JSON.parse(row.value);
+  const call = { id:'auth', data:'upauth:'+device.id, from:{id:2001,is_bot:false,language_code:'ru'},
+    message:{chat:{id:2001,type:'private'},message_id:device.message} };
+  await db.run("UPDATE support_config SET value=json_set(value,'$.next',0) WHERE key='update_device'");
+  state.oauthReply = { error:'slow_down',interval:10 };
+  await callback(call);
+  const slowed = JSON.parse((await db.get("SELECT value FROM support_config WHERE key='update_device'")).value);
+  assert.equal(slowed.interval,10);
+  await db.run("UPDATE support_config SET value=json_set(value,'$.expires',0) WHERE key='update_device'");
+  await callback(call);
+  assert.equal(state.oauthCalls.length,1);
+  assert.ok(calls('sendMessage').at(-1).params.text.includes('истёк'));
+});
 
 test('topic opening matches the reference layout with safe linked names and localized command blocks', () => {
   const row = { tg_user_id: 1001, first_name: '<Alex & Co>', username: 'alex',

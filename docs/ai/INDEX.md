@@ -8,3 +8,5 @@
 - SDK: docs/tgcloud-sdk.md; operational scripts and pinned CLI 0.2.0 in package.json.
 - Public repository: gramless/support; CONTRIBUTING.md, SECURITY.md and .github/ contain community guidance, issue forms and CI.
 - Release notices: lib/updates.js + version.js, scripts/check-updates.mjs and .github/workflows/release-updates.yml (stable release publication only).
+- Optional Telegram upgrades: lib/updater.js, scripts/setup-updates.mjs, scripts/update-{bot,deployment}.mjs and update-bot.yml; owner-only GitHub dispatch, migration-free revision-checked deployments.
+- Shared GitHub App: lib/github-auth.js and docs/gramless-updates.md; device flow, no app private key/backend, per-bot owner/repository tokens.
