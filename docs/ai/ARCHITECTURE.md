@@ -40,7 +40,9 @@ toggles; an adoption crash can leave an orphan provisional topic. The DB stores
 metadata/IDs/URL buttons, not private content/media bytes. Albums copy per item;
 edits are not synchronized and cross-chat reply IDs aren't reused.
 
-Daily release checks are a short GitHub Actions schedule, not a runtime worker.
+Release publication triggers a short GitHub Actions run; prereleases are skipped.
+There is no scheduled/manual workflow trigger. Forks need their own release event
+or a local CLI check; upstream release events do not propagate to forks.
 The repository secret TGCLOUD_TOKEN authorizes the CLI run API. check-updates.mjs
 reads the actual deployed lib/version source before invoking SDK-only updates.js.
 GitHub's stable releases/latest is compared numerically; no releases/current versions

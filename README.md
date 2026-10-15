@@ -27,7 +27,7 @@ Telegram is the user and operator interface.
 - Optional verified topic emoji and configurable staff-notification language.
 - Owner newsletters: media drafts, HTTPS buttons, preview, confirmation, recipient
   snapshots, cancellation, history, progress and resumable batches.
-- Daily GitHub release checks with a dedicated update-notification topic.
+- Notifications on published GitHub releases in a dedicated updates topic.
 
 Current human group membership is checked for replies. Administrative commands
 require administrator/owner status. Unrelated groups, General, unmapped topics,
@@ -152,10 +152,10 @@ Rate-limit retry times persist. Interrupted/ambiguous sends become **uncertain**
 rather than being blindly resent. Progress separates sent, failed, uncertain and
 pending recipients. A missing source stops the batch with explicit failures.
 
-## Daily release notifications
+## Release notifications
 
-The **Release updates** GitHub Action checks stable releases of `gramless/support`
-daily at **08:00 UTC** (12:00 in Tbilisi). It can also be run manually from Actions.
+The **Release updates** GitHub Action runs only when a release is published in
+this repository and skips prereleases. It checks stable releases of `gramless/support`.
 When a release is newer than the deployed bot, it creates a dedicated updates
 topic in the configured support group and posts the installed/new versions with a
 link to the release notes. Later notices reuse that topic; successful announcements
@@ -174,11 +174,13 @@ npm run check:updates
 The local command uses your saved CLI credentials. It reads `lib/version` from
 the actual deployed module snapshot; it does not assume that the latest source
 checkout is already installed. Stable release tags must be `X.Y.Z` or `vX.Y.Z`.
-Drafts, prereleases and the absence of releases produce no notice. GitHub may delay
-scheduled runs; monitor the workflow in Actions if a daily check is important.
+Drafts, prereleases and the absence of releases produce no notice. There is no
+daily polling or manual workflow trigger. Forks do not receive upstream release
+events: run the local command to check upstream, or publish a release in your fork
+to trigger its workflow.
 
-The short scheduled Action is needed because this TGCloud runtime has no documented
-scheduler. Notification logic uses only the native SDK and existing database;
+The release event starts a short Action run. Notification logic uses only the
+native SDK and existing database;
 there is no bot worker or public scheduling endpoint. `support_config` stores the
 updates topic/group, last announced version and an expiring concurrent-check lease.
 Missing topics are replaced and closed update topics are reopened when a new

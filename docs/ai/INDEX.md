@@ -7,4 +7,4 @@
 - Read ARCHITECTURE.md for invariants, TESTING.md for checks, STATE.md for setup status.
 - SDK: docs/tgcloud-sdk.md; operational scripts and pinned CLI 0.2.0 in package.json.
 - Public repository: gramless/support; CONTRIBUTING.md, SECURITY.md and .github/ contain community guidance, issue forms and CI.
-- Release notices: lib/updates.js + version.js, scripts/check-updates.mjs and .github/workflows/release-updates.yml (daily 08:00 UTC).
+- Release notices: lib/updates.js + version.js, scripts/check-updates.mjs and .github/workflows/release-updates.yml (stable release publication only).

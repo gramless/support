@@ -1,9 +1,8 @@
 name: Release updates
 
 on:
-  schedule:
-    - cron: '0 8 * * *'
-  workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -14,6 +13,7 @@ concurrency:
 
 jobs:
   notify:
+    if: github.event.release.prerelease == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -35,4 +35,4 @@ jobs:
         run: npm run check:updates
       - name: Explain missing configuration
         if: env.TGCLOUD_TOKEN == ''
-        run: echo "Set the TGCLOUD_TOKEN repository secret to enable daily Telegram release notices."
+        run: echo "Set the TGCLOUD_TOKEN repository secret to enable Telegram notices when a stable release is published."
