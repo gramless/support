@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a useful Telegram-native improvement.
+title: "Feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe who needs this and the support workflow that is difficult today.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Describe the messages, commands, buttons or state changes you would expect. Include a concrete example.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Is there an existing Telegram feature or a simpler workflow that could solve the problem?
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Platform considerations
+      description: Mention relevant TGCloud capabilities or limitations, permissions, privacy or migration needs. Links to official documentation are helpful; an implementation proposal is optional.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional examples or mockups. Use fictional data and remove credentials.

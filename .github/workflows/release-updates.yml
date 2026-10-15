@@ -1,0 +1,38 @@
+name: Release updates
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegram-release-updates
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node.js
+        if: env.TGCLOUD_TOKEN != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install CLI
+        if: env.TGCLOUD_TOKEN != ''
+        run: npm ci
+      - name: Check GitHub releases and notify Telegram
+        if: env.TGCLOUD_TOKEN != ''
+        run: npm run check:updates
+      - name: Explain missing configuration
+        if: env.TGCLOUD_TOKEN == ''
+        run: echo "Set the TGCLOUD_TOKEN repository secret to enable daily Telegram release notices."

@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem in Gramless Support.
+title: "Bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check existing issues first. Remove tokens, private messages, production IDs and personal data from examples and logs.
+        For security issues, use the private process in SECURITY.md instead of this public form.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and where it happened (private chat, support topic, language picker or newsletter).
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Provide commands, actions and relevant settings using fictional IDs.
+      placeholder: |
+        1. Send a private message to the bot.
+        2. Run /close in its support topic.
+        3. Observe the topic state.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the commit SHA or branch and TGCloud CLI version.
+      placeholder: "main at <commit>; @tgcloud/cli 0.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and evidence
+      description: Include relevant Node/OS and Telegram client versions, bot permissions, selected language, sanitized logs or screenshots. Say whether this happens locally or with real Telegram traffic.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Before submitting
+      options:
+        - label: I removed credentials and private customer information from this report.
+          required: true

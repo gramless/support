@@ -1,0 +1,30 @@
+{
+  "name": "@gramless/support",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram-native customer support on Telegram Serverless.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gramless/support.git"
+  },
+  "homepage": "https://github.com/gramless/support#readme",
+  "bugs": "https://github.com/gramless/support/issues",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "status": "tgcloud status",
+    "deploy": "tgcloud push",
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/support.test.mjs",
+    "configure": "node scripts/configure.mjs",
+    "setup:commands": "node scripts/setup-commands.mjs",
+    "check:updates": "node scripts/check-updates.mjs",
+    "verify:cloud": "node scripts/verify-cloud.mjs"
+  },
+  "devDependencies": {
+    "@tgcloud/cli": "0.2.0"
+  }
+}
