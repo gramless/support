@@ -1,3 +1,5 @@
+**English** | [Русский](README.ru.md)
+
 # Gramless Support
 
 Based on [nessshon/support-bot](https://github.com/nessshon/support-bot) by Shon Ness,
