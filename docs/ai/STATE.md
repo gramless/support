@@ -28,6 +28,6 @@ workflow trigger; deployments use a separate explicit dispatch workflow.
 Gramless Updates is registered under gramless with Actions write/Metadata read.
 It is shared across projects; Support is the first adapter. Phone/CLI screens,
 private device authorization and migration-free revision-checked update tooling
-are implemented. Device flow was initially disabled in the app registration;
-owner must enable it. No live authorization/deployment through this app has been
+are implemented. Device flow is enabled; the live SDK request successfully
+obtained a device code. No live user authorization/deployment through this app has been
 verified. Do not claim other projects are already integrated.
