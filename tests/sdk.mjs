@@ -18,8 +18,6 @@ export function reset() {
   database.prepare("INSERT INTO support_config (key, value) VALUES ('support_group_id', '-1001234567890')").run();
   Object.assign(state, { calls: [], topics: new Set(), closed: new Set(), nextThread: 10,
     nextMessage: 100, failures: [], member: 'administrator', canPin: false,
-    dispatches: [], dispatchStatus: 204, dispatchError: false,
-    oauthCalls: [], oauthStatus: 200, oauthReply: { error: 'authorization_pending' },
     releaseStatus: 200, release: { tag_name: 'v0.2.0', draft: false, prerelease: false } });
 }
 
@@ -99,21 +97,6 @@ export const api = new Proxy({}, {
 });
 
 export async function fetch(url, options) {
-  if (url === 'https://api.github.com/repos/gramless/support') return { ok: true, async json() { return { id: 42 }; } };
-  if (url === 'https://github.com/login/device/code') return { ok: true, async json() {
-    return { device_code: 'device-secret', user_code: 'ABCD-EFGH', interval: 5, expires_in: 900 };
-  } };
-  if (url === 'https://github.com/login/oauth/access_token') {
-    state.oauthCalls.push(JSON.parse(options.body));
-    return { ok: state.oauthStatus >= 200 && state.oauthStatus < 300, status: state.oauthStatus, async json() { return state.oauthReply; } };
-  }
-  if (url === 'https://api.github.com/repos/gramless/support/actions/workflows/update-bot.yml/dispatches') {
-    assert.equal(options.method, 'POST');
-    assert.equal(options.headers.Authorization, 'Bearer test-token');
-    state.dispatches.push(JSON.parse(options.body));
-    if (state.dispatchError) throw new Error('Network failure');
-    return { status: state.dispatchStatus };
-  }
   assert.equal(url, 'https://api.github.com/repos/gramless/support/releases/latest');
   assert.equal(options.headers['User-Agent'], 'Gramless-Support');
   return { ok: state.releaseStatus === 200, status: state.releaseStatus,

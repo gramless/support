@@ -20,13 +20,6 @@ or `.tgcloud/` state, and run in GitHub Actions on pushes and pull requests.
 - Release tests cover stable version ordering, deduplication, concurrent checks,
   topic recovery and failures. npm run check:updates exercises the real deployed
   version lookup and GitHub HTTP path; no synthetic release is used for live sends.
-- Update tests cover owner/topic/message authorization, persisted dispatch claims,
-  ambiguous requests, schema/module-removal refusal, revision checking and ambiguous
-  deploy readback. Device tests cover private ownership, intervals, expiry and
-  repository-bound tokens. A full Telegram-to-Actions deployment needs device
-  authorization and a newer published release; mocked checks do not prove that path.
-- Regression: installation_missing_access on HTTP 200/403 shows the selected
-  repository and install link; the same persisted code can later authorize.
 
 No separate formatter/linter/typechecker. Mock transport tests and real cloud
 loading/schema checks do not prove live Telegram delivery. Use a separate bot and

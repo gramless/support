@@ -159,8 +159,8 @@ this repository and skips prereleases. It checks stable releases of `gramless/su
 When a release is newer than the deployed bot, it creates a dedicated updates
 topic in the configured support group and posts the installed/new versions with a
 link to the release notes. Later notices reuse that topic; successful announcements
-are remembered so the same version is not posted repeatedly. Installation is
-optional and requires an explicit owner action; migrations are never automatic.
+are remembered so the same version is not posted every day. These are notices only,
+not automatic installation or migration.
 
 For your own deployment, fork this repository, enable GitHub Actions, and add your
 bot's CLI access token as the **`TGCLOUD_TOKEN` repository Actions secret**. Deploy
@@ -185,73 +185,6 @@ there is no bot worker or public scheduling endpoint. `support_config` stores th
 updates topic/group, last announced version and an expiring concurrent-check lease.
 Missing topics are replaced and closed update topics are reopened when a new
 release needs announcing. Customer support topics are never used for these notices.
-
-### Update from Telegram
-
-**Update bot** edits the release notice into two choices: **Without a PC** and
-**CLI commands**, with Back navigation. Only the configured Telegram owner can
-use these controls. The phone path uses the shared
-[Gramless Updates GitHub App](https://github.com/apps/gramless-updates), which is
-intended for every Gramless project, rather than a Support-specific app.
-
-From a phone browser:
-
-1. Use your own public workflow repository (fork this one for your own bot), enable
-   Actions, and add your bot's CLI token as the `TGCLOUD_TOKEN` Actions secret.
-2. Send `/updates owner/repository` privately to the bot as its configured owner.
-   This screen has Install, Connect and Disconnect controls, so setup can happen
-   before a new release is available.
-3. Install Gramless Updates on that repository only. Its permissions are Actions
-   write and Metadata read. Tap **Connect GitHub** in the phone instructions.
-4. The bot sends a device code privately. Enter it at GitHub's device page and tap
-   **Check authorization**. Return to **Without a PC** and tap **Install update**.
-
-No personal access token, app private key or client secret is needed. Authorization
-is short-lived: reconnect when requested for a later release. The device-code
-exchange requests access to the chosen repository ID. Each bot stores its own
-owner/repository authorization; one installation does not authorize other bots.
-Device codes and access tokens stay in private `support_config`, readable to
-database/CLI administrators. Refresh tokens are not retained. The TGCloud
-deployment credential stays in GitHub Actions.
-
-If GitHub reports missing installation access, install Gramless Updates on the
-account or organization that owns the selected repository and grant that repository
-access. Creating the app and authorizing a user are separate from installing it.
-Then check the same code again while it is valid, or reconnect after it expires.
-
-You can also open **Update bot** in GitHub's browser interface, choose **Run
-workflow**, enter the release tag and leave `request_id` blank. GitHub repository
-write permission authorizes this route. The Telegram shortcut dispatches the same
-workflow with a persisted request; duplicate clicks cannot start another update.
-Both routes report the result in the updates topic once deployment tooling starts.
-
-The CLI alternative shows copyable update commands directly in Telegram. You can
-also select the workflow repository from your terminal:
-
-```sh
-npm run setup:updates -- gramless/support
-```
-
-The workflow checks out the selected release's resolved commit, checks its
-version, reviews the schema diff, and deploys with an expected revision. It refuses
-downgrades, module removals and **any pending database change**; review those
-upgrades through the CLI. Official release code replaces local code customizations.
-If another deploy wins the revision race, it stops instead of overwriting it.
-
-```sh
-npm run setup:updates -- off
-```
-
-This clears the stored GitHub authorization; you can also revoke the app's user
-authorization in GitHub settings. If a run times out, fails before deployment starts, or dispatch has an
-unknown result, first inspect/cancel its **Update bot** Action and check the
-installed version. Only after confirming no run is queued or active, unlock the
-request with `npm run setup:updates -- reset`, then retry. Never reset an active run.
-Already-published notices are not rewritten during setup; the button appears on
-the next new release notice. Install the updater once using a normal deployment
-before using it. See [the shared app integration notes](docs/gramless-updates.md)
-for reuse in other Gramless projects. Private repositories can use the browser/CLI
-route; this device flow resolves the selected repository's ID through public metadata.
 
 ## Storage, safety and platform differences
 

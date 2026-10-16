@@ -49,18 +49,7 @@ GitHub's stable releases/latest is compared numerically; no releases/current ver
 produce no topic or notice. The existing support_config table stores a five-minute
 check lease, dedicated topic/group and last successfully announced version. It
 deduplicates ordinary/concurrent runs and recovers a missing/closed updates topic.
-Owner-only update callbacks edit a release notice into phone/CLI instructions.
-The shared Gramless Updates app uses device flow (public client ID, no app key or
-client secret). Private device state/check intervals and short-lived user tokens
-live in support_config, bound to owner/repository; no refresh token is retained.
-The device token request includes repository_id. /updates selects a public workflow
-repository and clears prior authorization when changed. install dispatches
-update-bot.yml; repository writers can also dispatch manually with a blank request ID.
-The TGCloud token stays in Actions secrets. SDK fetch cannot reach management
-(verified live), so self-deploy must run through Actions. update_request persists
-queued/running/done/failed state; ambiguous dispatches stay queued for manual review.
-Actions resolve a published upstream tag to a commit, validate sources/version,
-refuse pending schema changes/module removals, then revision-check deployment.
-setup:updates off removes authorization; reset unlocks only after operator review.
+Release notices contain only a release link. There is no GitHub App integration,
+device authorization, /updates command or deployment workflow. Upgrades use the CLI.
 As with support copies, an ambiguous crash after
 Telegram accepted a notice but before the DB acknowledgement may duplicate it.
