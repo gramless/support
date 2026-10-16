@@ -214,6 +214,11 @@ Device codes and access tokens stay in private `support_config`, readable to
 database/CLI administrators. Refresh tokens are not retained. The TGCloud
 deployment credential stays in GitHub Actions.
 
+If GitHub reports missing installation access, install Gramless Updates on the
+account or organization that owns the selected repository and grant that repository
+access. Creating the app and authorizing a user are separate from installing it.
+Then check the same code again while it is valid, or reconnect after it expires.
+
 You can also open **Update bot** in GitHub's browser interface, choose **Run
 workflow**, enter the release tag and leave `request_id` blank. GitHub repository
 write permission authorizes this route. The Telegram shortcut dispatches the same

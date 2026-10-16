@@ -19,8 +19,27 @@ async function oauth(path, body) {
     const response = await fetch('https://github.com/login/' + path, { method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Gramless-Updates' },
       body: JSON.stringify(body) });
-    return response.ok ? await response.json() : { error: 'request_failed' };
-  } catch { return { error: 'request_failed' }; }
+    const result = await response.json();
+    if (typeof result?.error === 'string') {
+      if (!['authorization_pending', 'slow_down'].includes(result.error)) {
+        console.warn('updates.github_oauth_error', { stage: path, status: response.status,
+          reason: oauthFailure(result.error) });
+      }
+      return result;
+    }
+    return response.ok && result && typeof result === 'object' ? result : { error: 'request_failed' };
+  } catch {
+    console.warn('updates.github_oauth_error', { stage: path, error: 'request_failed' });
+    return { error: 'request_failed' };
+  }
+}
+
+function oauthFailure(error) {
+  if (error === 'installation_missing_access') return 'githubInstallRequired';
+  if (error === 'device_flow_disabled') return 'githubDeviceDisabled';
+  if (error === 'request_failed') return 'githubTemporary';
+  if (['expired_token', 'access_denied', 'bad_verification_code', 'incorrect_device_code'].includes(error)) return 'githubExpired';
+  return 'githubAuthFailed';
 }
 
 export async function connectGithub(owner, language) {
@@ -36,7 +55,8 @@ export async function connectGithub(owner, language) {
   const client = await store.setting('github_app_client_id') || 'Iv23lirP23YIRgenKbeN';
   if (typeof client !== 'string' || !/^[\w.]{6,100}$/.test(client)) return 'githubAppUnavailable';
   const result = await oauth('device/code', { client_id: client });
-  if (result.error || typeof result.device_code !== 'string' || !/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(result.user_code || '')
+  if (result.error) return oauthFailure(result.error);
+  if (typeof result.device_code !== 'string' || !/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(result.user_code || '')
     || !Number.isSafeInteger(result.expires_in) || !Number.isSafeInteger(result.interval)
     || result.expires_in <= 0 || result.interval <= 0) return 'githubAuthFailed';
   const now = Math.floor(Date.now() / 1000);
@@ -80,8 +100,8 @@ export async function authCallback(call, language) {
       { ':value': JSON.stringify({ ...device, interval, next: now + interval }), ':previous': claimed });
     return 'githubPending';
   }
-  if (result.error === 'expired_token' || result.error === 'access_denied') return 'githubExpired';
-  if (typeof result.access_token !== 'string' || !result.access_token || result.error
+  if (result.error) return oauthFailure(result.error);
+  if (typeof result.access_token !== 'string' || !result.access_token
     || !Number.isSafeInteger(result.expires_in) || result.expires_in <= 0) return 'githubAuthFailed';
   // Short-lived device-flow user token only. No app private key, client secret or refresh token is retained.
   await saveUpdateSetting('update_auth', JSON.stringify({ owner: call.from.id, repository: device.repository, token: result.access_token,

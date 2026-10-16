@@ -178,6 +178,33 @@ test('device flow handles slow_down and expiration without workers or retaining 
   assert.ok(calls('sendMessage').at(-1).params.text.includes('истёк'));
 });
 
+test('missing GitHub installation shows a repository-specific install link and preserves the code for retry', async () => {
+  await updateNotice();
+  await db.run("DELETE FROM support_config WHERE key='update_auth'");
+  await connectGithub(2001, 'ru');
+  const device = JSON.parse((await db.get("SELECT value FROM support_config WHERE key='update_device'")).value);
+  const call = { id:'auth', data:'upauth:'+device.id, from:{id:2001,is_bot:false,language_code:'ru'},
+    message:{chat:{id:2001,type:'private'},message_id:device.message} };
+  for (const status of [200, 403]) {
+    await db.run("UPDATE support_config SET value=json_set(value,'$.next',0) WHERE key='update_device'");
+    state.oauthStatus = status;
+    state.oauthReply = { error:'installation_missing_access' };
+    await callback(call);
+    const response = calls('sendMessage').at(-1).params;
+    assert.ok(response.text.includes('gramless/support'));
+    assert.ok(response.text.includes('установите'));
+    assert.equal(response.reply_markup.inline_keyboard[0][0].url,'https://github.com/apps/gramless-updates/installations/new');
+    assert.equal(await db.get("SELECT value FROM support_config WHERE key='update_auth'"), null);
+    assert.ok(await db.get("SELECT value FROM support_config WHERE key='update_device'"));
+  }
+  // Retry the same device code after granting repository access.
+  await db.run("UPDATE support_config SET value=json_set(value,'$.next',0) WHERE key='update_device'");
+  state.oauthStatus = 200;
+  state.oauthReply = { access_token:'now-authorized',expires_in:28800 };
+  await callback(call);
+  assert.equal(await githubToken(2001,'gramless/support'),'now-authorized');
+});
+
 test('owner can connect/disconnect from private updates setup before a release, and stale menus fail closed', async () => {
   await updateNotice();
   await handle({ ...user(2001), text: '/updates gramless/support' });

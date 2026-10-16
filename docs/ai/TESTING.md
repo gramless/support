@@ -25,6 +25,8 @@ or `.tgcloud/` state, and run in GitHub Actions on pushes and pull requests.
   deploy readback. Device tests cover private ownership, intervals, expiry and
   repository-bound tokens. A full Telegram-to-Actions deployment needs device
   authorization and a newer published release; mocked checks do not prove that path.
+- Regression: installation_missing_access on HTTP 200/403 shows the selected
+  repository and install link; the same persisted code can later authorize.
 
 No separate formatter/linter/typechecker. Mock transport tests and real cloud
 loading/schema checks do not prove live Telegram delivery. Use a separate bot and

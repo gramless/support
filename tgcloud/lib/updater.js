@@ -53,7 +53,11 @@ export async function updateCallback(call) {
   if (call.data.startsWith('upauth:')) {
     await api.answerCallbackQuery({ callback_query_id: call.id });
     const result = await authCallback(call, language);
-    if (result !== 'githubConnected') await api.sendMessage({ chat_id: call.from.id, text: t(language, result) });
+    if (result !== 'githubConnected') await api.sendMessage({ chat_id: call.from.id,
+      text: t(language, result, { repository: await store.setting('update_repository') || 'owner/repository' }),
+      ...(result === 'githubInstallRequired' ? { reply_markup: { inline_keyboard: [
+        [{ text: t(language, 'githubInstall'), url: 'https://github.com/apps/gramless-updates/installations/new' }],
+      ] } } : {}) });
     return true;
   }
   const group = await store.supportGroup();

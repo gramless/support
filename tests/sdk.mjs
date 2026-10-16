@@ -19,7 +19,7 @@ export function reset() {
   Object.assign(state, { calls: [], topics: new Set(), closed: new Set(), nextThread: 10,
     nextMessage: 100, failures: [], member: 'administrator', canPin: false,
     dispatches: [], dispatchStatus: 204, dispatchError: false,
-    oauthCalls: [], oauthReply: { error: 'authorization_pending' },
+    oauthCalls: [], oauthStatus: 200, oauthReply: { error: 'authorization_pending' },
     releaseStatus: 200, release: { tag_name: 'v0.2.0', draft: false, prerelease: false } });
 }
 
@@ -105,7 +105,7 @@ export async function fetch(url, options) {
   } };
   if (url === 'https://github.com/login/oauth/access_token') {
     state.oauthCalls.push(JSON.parse(options.body));
-    return { ok: true, async json() { return state.oauthReply; } };
+    return { ok: state.oauthStatus >= 200 && state.oauthStatus < 300, status: state.oauthStatus, async json() { return state.oauthReply; } };
   }
   if (url === 'https://api.github.com/repos/gramless/support/actions/workflows/update-bot.yml/dispatches') {
     assert.equal(options.method, 'POST');

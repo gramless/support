@@ -21,7 +21,7 @@ credential-free CI. Fresh-clone checks do not depend on cached TGCloud capabilit
 Release notification logic is deployed. The GitHub Action runs only on release
 publication, skips prereleases, compares the actual deployed version, and posts
 newer stable versions into a separate persistent updates topic when TGCLOUD_TOKEN
-is configured. Source version is 1.1.0; the linked deployment remains 1.0.0 with
+is configured. Source version is 1.1.1; the linked deployment remains 1.0.0 with
 the updater bootstrap installed. Release checks have no scheduled or manual
 workflow trigger; deployments use a separate explicit dispatch workflow.
 
@@ -31,3 +31,8 @@ private device authorization and migration-free revision-checked update tooling
 are implemented. Device flow is enabled; the live SDK request successfully
 obtained a device code. No live user authorization/deployment through this app has been
 verified. Do not claim other projects are already integrated.
+
+Live token exchange returned installation_missing_access: the app was not installed
+on the selected repository. This now shows a specific install link and preserves
+the code for retry. Non-2xx OAuth errors retain their typed reason; logs contain
+only stage/status/classification. A successful user authorization is still unverified.
