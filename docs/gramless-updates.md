@@ -46,6 +46,9 @@ releases; copying it unchanged will not turn it into another project's updater.
 GitHub authorization grants the intersection of the app's permissions and the
 authorizing user's access. An installation is not a central deployment service:
 the workflow repository's secret controls exactly which bot it can deploy.
+Disconnecting in one bot clears only that bot's saved authorization. Revoking the
+shared app's user authorization in GitHub may also affect that user's connections
+in other Gramless projects.
 Repository maintainers and published release authors remain trusted. Keep each
 project independently deployable; do not import code from sibling repositories.
 

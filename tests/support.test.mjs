@@ -178,6 +178,22 @@ test('device flow handles slow_down and expiration without workers or retaining 
   assert.ok(calls('sendMessage').at(-1).params.text.includes('истёк'));
 });
 
+test('owner can connect/disconnect from private updates setup before a release, and stale menus fail closed', async () => {
+  await updateNotice();
+  await handle({ ...user(2001), text: '/updates gramless/support' });
+  const menu = await db.get("SELECT value FROM support_config WHERE key='update_setup_message'");
+  const call = { id:'setup', data:'upsetup:connect', from:{id:2001,is_bot:false},
+    message:{chat:{id:2001,type:'private'},message_id:Number(menu.value)} };
+  await callback({ ...call, message:{...call.message,message_id:999} });
+  assert.equal(await db.get("SELECT value FROM support_config WHERE key='update_device'"),null);
+  await callback(call);
+  assert.ok(await db.get("SELECT value FROM support_config WHERE key='update_device'"));
+  await callback({ ...call, data:'upsetup:disconnect' });
+  assert.equal(await db.get("SELECT value FROM support_config WHERE key='update_device'"),null);
+  assert.equal(await githubToken(2001,'gramless/support'),null);
+  assert.equal(copies().length,0);
+});
+
 test('topic opening matches the reference layout with safe linked names and localized command blocks', () => {
   const row = { tg_user_id: 1001, first_name: '<Alex & Co>', username: 'alex',
     lang_code: 'en', created_at: 0, status: 'open' };

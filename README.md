@@ -199,6 +199,8 @@ From a phone browser:
 1. Use your own public workflow repository (fork this one for your own bot), enable
    Actions, and add your bot's CLI token as the `TGCLOUD_TOKEN` Actions secret.
 2. Send `/updates owner/repository` privately to the bot as its configured owner.
+   This screen has Install, Connect and Disconnect controls, so setup can happen
+   before a new release is available.
 3. Install Gramless Updates on that repository only. Its permissions are Actions
    write and Metadata read. Tap **Connect GitHub** in the phone instructions.
 4. The bot sends a device code privately. Enter it at GitHub's device page and tap

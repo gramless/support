@@ -17,17 +17,39 @@ export async function updatesCommand(message) {
       await db.run("DELETE FROM support_config WHERE key IN ('update_auth', 'update_device')");
     }
   }
-  return api.sendMessage({ chat_id: message.from.id, text: t(language, 'updatesSetup', {
+  const menu = await api.sendMessage({ chat_id: message.from.id, text: t(language, 'updatesSetup', {
     repository: await store.setting('update_repository') || 'owner/repository',
-  }) });
+  }), reply_markup: { inline_keyboard: [
+    [{ text: t(language, 'githubInstall'), url: 'https://github.com/apps/gramless-updates/installations/new' }],
+    [{ text: t(language, 'githubConnect'), callback_data: 'upsetup:connect' }],
+    [{ text: t(language, 'githubDisconnect'), callback_data: 'upsetup:disconnect' }],
+  ] } });
+  await saveUpdateSetting('update_setup_message', String(menu.message_id));
+  return menu;
 }
 
 export async function updateCallback(call) {
-  if (typeof call?.data !== 'string' || !/^(update:|up:|upauth:)/.test(call.data)) return false;
+  if (typeof call?.data !== 'string' || !/^(update:|up:|upauth:|upsetup:)/.test(call.data)) return false;
   const language = locale((await store.preferences(call.from.id))?.language || call.from.language_code);
   const answer = key => api.answerCallbackQuery({ callback_query_id: call.id,
     text: t(language, key), show_alert: true });
   if (!await store.isOwner(call.from.id)) { await answer('updateDenied'); return true; }
+  if (call.data.startsWith('upsetup:')) {
+    if (call.message?.chat?.type !== 'private' || call.message.chat.id !== call.from.id
+      || String(call.message.message_id) !== await store.setting('update_setup_message')
+      || !['upsetup:connect', 'upsetup:disconnect'].includes(call.data)) {
+      await answer('updateDenied'); return true;
+    }
+    await api.answerCallbackQuery({ callback_query_id: call.id });
+    if (call.data === 'upsetup:disconnect') {
+      await db.run("DELETE FROM support_config WHERE key IN ('update_auth', 'update_device')");
+      await api.sendMessage({ chat_id: call.from.id, text: t(language, 'githubDisconnected') });
+    } else {
+      const result = await connectGithub(call.from.id, language);
+      if (result !== 'githubCheckPrivate') await api.sendMessage({ chat_id: call.from.id, text: t(language, result) });
+    }
+    return true;
+  }
   if (call.data.startsWith('upauth:')) {
     await api.answerCallbackQuery({ callback_query_id: call.id });
     const result = await authCallback(call, language);
